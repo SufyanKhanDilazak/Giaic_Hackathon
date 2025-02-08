@@ -8,41 +8,21 @@ import { Button } from "@/components/ui/button";
 import { useParams } from "next/navigation";
 
 async function getProduct(id: string) {
-  try {
-    // Add console logging to debug the ID
-    console.log('Fetching product with ID:', id);
-    
-    const query = `*[_type == "products" && _id == $id][0] {
-      _id,
-      name,
-      price,
-      description,
-      "imageUrl": image.asset->url,
-      "additionalImages": images[].asset->url,
-      category,
-      discountPercent,
-      "isNew": new,
-      colors,
-      sizes
-    }`;
-    
-    // Log the constructed query
-    console.log('Sanity query:', query);
-    
-    const product = await client.fetch<IProduct>(query, { id });
-    
-    // Log the retrieved product
-    console.log('Retrieved product:', product);
-    
-    if (!product) {
-      throw new Error(`No product found with ID: ${id}`);
-    }
-    
-    return product;
-  } catch (error) {
-    console.error('Error in getProduct:', error);
-    throw error;
-  }
+  const query = `*[_type == "products" && _id == $id][0] {
+    _id,
+    name,
+    price,
+    description,
+    "imageUrl": image.asset->url,
+    "additionalImages": images[].asset->url,
+    category,
+    discountPercent,
+    "isNew": new,
+    colors,
+    sizes
+  }`;
+  const product = await client.fetch<IProduct>(query, { id });
+  return product;
 }
 
 export default function ProductPage() {
@@ -51,34 +31,22 @@ export default function ProductPage() {
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [selectedColor, setSelectedColor] = useState<string>("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const { addToCart } = useCart();
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        setLoading(true);
-        setError(null);
-        
         const id = Array.isArray(params.id) ? params.id[0] : params.id;
-        if (!id) {
-          throw new Error('No product ID provided');
-        }
+        if (!id) return;
         
-        console.log('Attempting to fetch product with ID:', id);
         const data = await getProduct(id);
-        
-        if (!data) {
-          throw new Error('Product not found');
-        }
+        if (!data) return;
         
         setProduct(data);
         setSelectedColor(data.colors[0]);
         setSelectedSize(data.sizes[0]);
       } catch (error) {
         console.error("Error fetching product:", error);
-        setError(error instanceof Error ? error.message : 'Failed to fetch product');
-        setProduct(null);
       } finally {
         setLoading(false);
       }
@@ -101,38 +69,15 @@ export default function ProductPage() {
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8 flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-red-500">Error: {error}</div>
-        <div className="mt-4 text-gray-600">
-          Product ID: {Array.isArray(params.id) ? params.id[0] : params.id}
-        </div>
-      </div>
-    );
+    return <div className="container mx-auto px-4 py-8">Loading...</div>;
   }
 
   if (!product) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-xl">Product not found</div>
-        <div className="mt-4 text-gray-600">
-          Product ID: {Array.isArray(params.id) ? params.id[0] : params.id}
-        </div>
-      </div>
-    );
+    return <div className="container mx-auto px-4 py-8">Product not found</div>;
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Rest of your existing JSX remains the same */}
       <div className="grid md:grid-cols-2 gap-8">
         {/* Image Gallery */}
         <div>
