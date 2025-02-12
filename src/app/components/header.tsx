@@ -1,14 +1,22 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Search, User, ChevronDown, ShoppingCart } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { useCart } from "./CartContext"
+import Link from "next/link";
+import { Search, User, ChevronDown, ShoppingCart, Menu } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useCart } from "./CartContext";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { DialogTitle } from "@/components/ui/dialog"; // For accessibility
 
 export function Header() {
-  const { cartQuantity, shouldGlow } = useCart()
+  const { cartQuantity, shouldGlow } = useCart();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background dark:bg-gray-950">
@@ -16,9 +24,18 @@ export function Header() {
       <div className="bg-black text-white text-center py-2 text-xs sm:text-sm">
         <p className="px-4">
           Sign-up and get 20% off your first order{" "}
-          <Link href="/shop" className="font-bold underline">
-            Sign Up Now
-          </Link>
+          <SignedOut>
+            <SignInButton mode="modal">
+              <Button variant="link" className="font-bold underline p-0 text-white">
+                Sign Up Now
+              </Button>
+            </SignInButton>
+          </SignedOut>
+          <SignedIn>
+            <Link href="/account" className="font-bold underline">
+              My Account
+            </Link>
+          </SignedIn>
         </p>
       </div>
 
@@ -26,8 +43,50 @@ export function Header() {
       <div className="container mx-auto px-4 py-4 flex items-center justify-between dark:bg-gray-950">
         {/* Left Section */}
         <div className="flex items-center space-x-4">
+          {/* Mobile Menu Button */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="lg:hidden">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+              <DialogTitle>
+              </DialogTitle>
+              <nav className="flex flex-col space-y-4">
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="flex items-center hover:text-primary">
+                    Shop
+                    <ChevronDown className="ml-1 h-4 w-4" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem>
+                      <Link href="/" className="w-full">
+                        Home
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Link href="/allproducts" className="w-full">
+                        All Products
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Link href="/onsale" className="hover:text-primary">
+                  On Sale
+                </Link>
+                <Link href="/new" className="hover:text-primary">
+                  New Arrivals
+                </Link>
+                <Link href="/brands" className="hover:text-primary">
+                  Brands
+                </Link>
+              </nav>
+            </SheetContent>
+          </Sheet>
+
           <Link href="/" className="text-xl sm:text-2xl font-black text-gray-950 dark:text-gray-50">
-            SHOP.CO
+            DOPE.SHOP
           </Link>
         </div>
 
@@ -92,32 +151,18 @@ export function Header() {
           </Button>
 
           {/* User Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          <SignedIn>
+            <UserButton afterSignOutUrl="/" />
+          </SignedIn>
+          <SignedOut>
+            <SignInButton mode="modal">
               <Button variant="ghost" size="icon">
                 <User className="h-5 w-5" />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>
-                <Link href="/account" className="w-full">
-                  My Account
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link href="/orders" className="w-full">
-                  My Orders
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link href="/logout" className="w-full">
-                  Logout
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </SignInButton>
+          </SignedOut>
         </div>
       </div>
     </header>
-  )
+  );
 }

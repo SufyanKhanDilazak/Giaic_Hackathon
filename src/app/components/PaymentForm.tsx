@@ -5,6 +5,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "./CartContext";
 import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input"; // For input fields
+import { Label } from "@/components/ui/label"; // For labels
 
 export default function PaymentForm({ totalAmount }: { totalAmount: number }) {
   const stripe = useStripe();
@@ -14,11 +16,26 @@ export default function PaymentForm({ totalAmount }: { totalAmount: number }) {
   const { clearCart } = useCart();
   const router = useRouter();
 
+  // State for additional fields
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [zip, setZip] = useState("");
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
     if (!stripe || !elements) {
       setError("Stripe has not been properly initialized");
+      return;
+    }
+
+    // Validate required fields
+    if (!name || !email || !phone || !address || !city || !state || !zip) {
+      setError("Please fill out all required fields.");
       return;
     }
 
@@ -31,8 +48,15 @@ export default function PaymentForm({ totalAmount }: { totalAmount: number }) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
-          amount: Math.round(totalAmount * 100)
+        body: JSON.stringify({
+          amount: Math.round(totalAmount * 100),
+          name,
+          email,
+          phone,
+          address,
+          city,
+          state,
+          zip,
         }),
       });
 
@@ -47,6 +71,18 @@ export default function PaymentForm({ totalAmount }: { totalAmount: number }) {
         {
           payment_method: {
             card: elements.getElement(CardElement)!,
+            billing_details: {
+              name,
+              email,
+              phone,
+              address: {
+                line1: address,
+                city,
+                state,
+                postal_code: zip,
+                country: "US", // Set to the appropriate country code
+              },
+            },
           },
         }
       );
@@ -67,6 +103,88 @@ export default function PaymentForm({ totalAmount }: { totalAmount: number }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Customer Information Fields */}
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="name">Full Name</Label>
+          <Input
+            id="name"
+            type="text"
+            placeholder="John Doe"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="johndoe@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="phone">Phone Number</Label>
+          <Input
+            id="phone"
+            type="tel"
+            placeholder="+1 234 567 890"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="address">Address</Label>
+          <Input
+            id="address"
+            type="text"
+            placeholder="123 Main St"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="city">City</Label>
+          <Input
+            id="city"
+            type="text"
+            placeholder="New York"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="state">State</Label>
+          <Input
+            id="state"
+            type="text"
+            placeholder="NY"
+            value={state}
+            onChange={(e) => setState(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="zip">ZIP Code</Label>
+          <Input
+            id="zip"
+            type="text"
+            placeholder="10001"
+            value={zip}
+            onChange={(e) => setZip(e.target.value)}
+            required
+          />
+        </div>
+      </div>
+
+      {/* Stripe Card Element */}
       <div className="p-4 border rounded-md bg-white">
         <CardElement
           options={{
@@ -85,9 +203,13 @@ export default function PaymentForm({ totalAmount }: { totalAmount: number }) {
           }}
         />
       </div>
+
+      {/* Error Message */}
       {error && (
         <div className="text-red-500 text-sm">{error}</div>
       )}
+
+      {/* Submit Button */}
       <Button 
         type="submit" 
         disabled={!stripe || loading} 

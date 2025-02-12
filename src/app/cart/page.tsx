@@ -7,23 +7,30 @@ import { useRouter } from "next/navigation";
 import { Trash2, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
+import { useUser, SignInButton } from "@clerk/nextjs"; // Import Clerk hooks
+
 export default function CartPage() {
   const { cartItems, addToCart, removeFromCart, cartQuantity } = useCart();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const { isSignedIn } = useUser(); // Check if the user is signed in
 
   const subtotal = cartItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
-  
+
   const shipping = 10; // Fixed shipping cost
   const tax = subtotal * 0.08; // 8% tax
   const total = subtotal + shipping + tax;
 
   const handleCheckout = () => {
+    if (!isSignedIn) {
+      // If the user is not signed in, show a sign-in modal
+      return;
+    }
     setIsLoading(true);
-    router.push('/checkout');
+    router.push('/checkout'); // Redirect to checkout if signed in
   };
 
   return (
@@ -127,18 +134,28 @@ export default function CartPage() {
                   </div>
                 </div>
               </div>
-              <Button
-                onClick={handleCheckout}
-                disabled={isLoading}
-                className="w-full mt-6 bg-black hover:bg-gray-800"
-              >
-                {isLoading ? "Processing..." : "Proceed to Checkout"}
-              </Button>
-              <Link href="/">
+
+              {/* Checkout Button with Clerk Integration */}
+              {isSignedIn ? (
                 <Button
-                  variant="outline"
-                  className="w-full mt-3"
+                  onClick={handleCheckout}
+                  disabled={isLoading}
+                  className="w-full mt-6 bg-black hover:bg-gray-800"
                 >
+                  {isLoading ? "Processing..." : "Proceed to Checkout"}
+                </Button>
+              ) : (
+                <SignInButton mode="modal">
+                  <Button
+                    className="w-full mt-6 bg-black hover:bg-gray-800"
+                  >
+                    Sign In to Checkout
+                  </Button>
+                </SignInButton>
+              )}
+
+              <Link href="/">
+                <Button variant="outline" className="w-full mt-3">
                   Continue Shopping
                 </Button>
               </Link>
