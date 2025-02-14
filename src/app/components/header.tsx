@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Search, User, ChevronDown, ShoppingCart, Menu } from "lucide-react";
+import { Search, User, ChevronDown, ShoppingCart, Menu, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,16 +13,39 @@ import {
 import { useCart } from "./CartContext";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
-import { DialogTitle } from "@/components/ui/dialog"; // For accessibility
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { DialogTitle } from "@/components/ui/dialog";
 
 export function Header() {
   const { cartQuantity, shouldGlow } = useCart();
+  const pathname = usePathname();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
+
+  useEffect(() => {
+    setIsSheetOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const searchBar = document.querySelector(".mobile-search-bar");
+      if (isSearchVisible && searchBar && !searchBar.contains(event.target as Node)) {
+        setIsSearchVisible(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isSearchVisible]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background dark:bg-gray-950">
       {/* Top banner */}
       <div className="bg-black text-white text-center py-2 text-xs sm:text-sm">
-        <p className="px-4">
+        <div className="px-4">
           Sign-up and get 20% off your first order{" "}
           <SignedOut>
             <SignInButton mode="modal">
@@ -30,13 +53,20 @@ export function Header() {
                 Sign Up Now
               </Button>
             </SignInButton>
-          </SignedOut>
+          </SignedOut> 
           <SignedIn>
-            <Link href="/account" className="font-bold underline">
-              My Account
-            </Link>
+            <div className="relative inline-block ml-2">
+              <style jsx global>{`
+                .banner-user-button .cl-userButtonTrigger {
+                  transform: translateY(7px);
+                }
+              `}</style>
+              <div className="banner-user-button">
+                <UserButton afterSignOutUrl="/" />
+              </div>
+            </div>
           </SignedIn>
-        </p>
+        </div>
       </div>
 
       {/* Main header */}
@@ -44,15 +74,14 @@ export function Header() {
         {/* Left Section */}
         <div className="flex items-center space-x-4">
           {/* Mobile Menu Button */}
-          <Sheet>
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="lg:hidden">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-              <DialogTitle>
-              </DialogTitle>
+              <DialogTitle className="sr-only">Mobile Menu</DialogTitle>
               <nav className="flex flex-col space-y-4">
                 <DropdownMenu>
                   <DropdownMenuTrigger className="flex items-center hover:text-primary">
@@ -86,7 +115,7 @@ export function Header() {
           </Sheet>
 
           <Link href="/" className="text-xl sm:text-2xl font-black text-gray-950 dark:text-gray-50">
-            DOPE.SHOP
+            SHOP.CO
           </Link>
         </div>
 
@@ -123,12 +152,17 @@ export function Header() {
 
         {/* Right Section */}
         <div className="flex items-center space-x-4 text-gray-950 dark:text-gray-50">
-          {/* Search Icon */}
-          <Button variant="ghost" size="icon" className="md:hidden">
+          {/* Search Icon for Mobile */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={() => setIsSearchVisible(!isSearchVisible)}
+          >
             <Search size={24} />
           </Button>
 
-          {/* Search Input */}
+          {/* Search Input for Desktop */}
           <div className="relative hidden md:block">
             <Input
               type="search"
@@ -152,17 +186,42 @@ export function Header() {
 
           {/* User Menu */}
           <SignedIn>
-            <UserButton afterSignOutUrl="/" />
+            <div className="nav-user-button mt-1">
+              <style jsx global>{`
+                .nav-user-button .cl-userButtonTrigger {
+                  transform: none;
+                }
+              `}</style>
+              <UserButton afterSignOutUrl="/" />
+            </div>
           </SignedIn>
           <SignedOut>
             <SignInButton mode="modal">
-              <Button variant="ghost" size="icon">
-                <User className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <User className="h-4 w-4 " />
               </Button>
             </SignInButton>
           </SignedOut>
         </div>
       </div>
+
+      {/* Mobile Search Input */}
+      {isSearchVisible && (
+        <div className="mobile-search-bar absolute top-16 left-0 right-0 bg-white p-2 md:hidden border-t flex items-center gap-2">
+          <Input
+            type="search"
+            placeholder="Search for products"
+            className="w-full h-10"
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsSearchVisible(false)}
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+      )}
     </header>
   );
 }
